@@ -1,6 +1,6 @@
 #coding:utf-8
 from conf import Config as C
-import os, zipfile
+import os, zipfile, zlib ,time
 
 #获取发布文件名称
 def select_release_packages():
@@ -8,17 +8,60 @@ def select_release_packages():
     #判断上传目录是否存在,不存在则创建
     if not os.path.exists(source_dir):
         os.mkdir(source_dir)
-    package_name = os.listdir(source_dir)
-    print ("获取发布文件名")
-    print (type(package_name))
-    print (package_name)
-    return package_name
-def backup_release_dir():
+    #获取发布软件信息
+    package_names = os.listdir(source_dir)
+    version_info_dict = {}
+    for package_name in package_names:
+        version = package_name.split('_')[0]
+        name_info = package_name.split('_')[1].split('.')[0]
+        if version_info_dict.has_key(version):
+            value_list.append(name_info)
+        else:
+            #第一次运行时会将value初始化为一个字典
+            value_list = []
+            value_list.append(name_info)
+            version_info_dict[version] = value_list
+    return version_info_dict
+
+
+#备份发布目录
+def backup_release_dir(version_info_dict):
+    global now_time
+    now_time = str(int(time.time()))
+    backup_dir = "d:/backups/" + now_time
+    web_dir = "d:/web"
+    os.chdir(web_dir)
+    if not os.path.exists(backup_dir):
+        os.mkdir(backup_dir)
+    #根据字典中的key值进行对应的备份
+    for key in version_info_dict.keys():
+        z = zipfile.ZipFile(backup_dir+'/'+key+'.zip','w',zipfile.ZIP_DEFLATED)
+        for dirpath, dirname, filenames in os.walk(key):
+            for filename in filenames:
+                z.write(os.path.join(dirpath,filename))
+        z.close()
+
+def insert_backup_info_to_db(version_info_dict):
+    print (version_info_dict)
+    for key in version_info_dict.keys():
+        print (version_info_dict[key])
+        # with C.CONNECTION.cursor() as cursor:
+        #     sql = "INSERT INTO `web_backup_info` (`hostname`, `VERSION`, `rom`, `wx`, `bn`, `service`, `TIME`) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+        #     cursor.execute(sql,(C.HOSTNAME,key,0,0,0,0,1492071319))
+        # C.CONNECTION.commit()
+
+
     pass
 
-def main():
-    select_release_packages()
+def delete_more_than_30days_packages():
+    pass
 
+
+
+def main():
+    version_info_dict = select_release_packages()
+    backup_release_dir(version_info_dict)
+    insert_backup_info_to_db(version_info_dict)
 if __name__ == '__main__':
     main()
 
