@@ -57,8 +57,6 @@ def delete_more_than_30days_packages():
     #批处理每天会清除
     pass
 
-
-
 def main():
     version_info_dict = select_release_packages()
     backup_release_dir(version_info_dict)
