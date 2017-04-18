@@ -8,13 +8,16 @@ def select_release_packages():
     #判断上传目录是否存在,不存在则创建
     if not os.path.exists(source_dir):
         os.mkdir(source_dir)
-    #获取发布软件信息
+    #获取发布软件的名称
     package_names = os.listdir(source_dir)
     version_info_dict = {}
     for package_name in package_names:
+        #获取版本号
         version = package_name.split('_')[0]
         name_info = package_name.split('_')[1].split('.')[0]
+        #版本号去重
         if not version_info_dict.has_key(version):
+            #设置默认值(默认都没有发布)
             value_dict = {"rom":0,"wx":0,"bn":0,"service":0}
         if name_info == "rom":
             value_dict["rom"] = 1
@@ -28,7 +31,7 @@ def select_release_packages():
     return  version_info_dict
     #_----------------------------------------------------
 
-#备份发布目录
+#备份web目录
 def backup_release_dir(version_info_dict):
     global now_time
     now_time = str(int(time.time()))
@@ -39,11 +42,14 @@ def backup_release_dir(version_info_dict):
         os.mkdir(backup_dir)
     #根据字典中的key值进行对应的备份
     for key in version_info_dict.keys():
+        print (key)
         z = zipfile.ZipFile(backup_dir+'/'+key+'.zip','w',zipfile.ZIP_DEFLATED)
         for dirpath, dirname, filenames in os.walk(key):
             for filename in filenames:
                 z.write(os.path.join(dirpath,filename))
         z.close()
+def backup_service_dir(version_info_dict):
+    pass
 
 def insert_backup_info_to_db(version_info_dict):
     for key in version_info_dict.keys():
@@ -62,9 +68,7 @@ def delete_more_than_30days_packages():
 def main():
     version_info_dict = select_release_packages()
     backup_release_dir(version_info_dict)
+    backup_service_dir(version_info_dict)
     insert_backup_info_to_db(version_info_dict)
 if __name__ == '__main__':
     main()
-
-
-

@@ -25,14 +25,15 @@ def release_all_file(release_info):
         print "------------" + str(version_info["version"]) + "--------------"
         for key in version_info.keys():
             if version_info[key] == 1:  #1为True
-                tmp_release_package_name = tmp_dir + str(version_info["version"]) + "_" + key + ".zip"
+                version = str(version_info["version"])
+                tmp_release_package_name = tmp_dir + version + "_" + key + ".zip"
                 #print (tmp_release_package_name)
                 if key != "service":
                     rom_dir = ""
                     if key == "rom":
-                        rom_dir = C.WEB_DIR + "\\" +str(version_info["version"])
+                        rom_dir = C.WEB_DIR + "\\" +version
                     else:
-                        rom_dir = C.WEB_DIR + "\\" +str(version_info["version"]) + "\\" + str(key)
+                        rom_dir = C.WEB_DIR + "\\" +version + "\\" + str(key)
                     #解压文件
                     f = zipfile.ZipFile(tmp_release_package_name, 'r')
                     for file in f.namelist():
@@ -40,6 +41,7 @@ def release_all_file(release_info):
                     #修改版本号
                     change_webconfig_version(rom_dir,key)
                 else:
+                    release_service(version)
                     pass
 
 #修改版本号
@@ -65,9 +67,46 @@ def change_webconfig_version(rom_dir,key):
                 f.writelines(change_version)
                 f.close
 
-def release_single_file(version, rom=0, wx=0, bn=0, service=0):
-    #tmp_release_package_name = tmp_dir + version + "_"
+def release_service (version):
+    print ("服务发布暂未使用")
+    print ("发布目录"+C.SERVICE_DIR+version)
     pass
+
+def release_single_file(release_info,single_version_info):
+    print (single_version_info[1])
+    #版本标识信息,1为数据库中有记录
+    status = 1
+
+    for version_info in release_info:
+        #判断输入版本是否记录在数据库中
+        if single_version_info[1] in version_info.values():
+            for key in version_info.keys():
+                #判断输入的参数,是否在数据库中记录
+                if version_info[key] == 1 and key in single_version_info:
+                    version = str(version_info["version"])
+                    tmp_release_package_name = tmp_dir + version + "_" + key + ".zip"
+                    if key != "service":
+                        rom_dir = ""
+                        if key == "rom":
+                            rom_dir = C.WEB_DIR + "\\" + version
+                        else:
+                            rom_dir = C.WEB_DIR + "\\" + version + "\\" + str(key)
+                        # 解压文件
+                        f = zipfile.ZipFile(tmp_release_package_name, 'r')
+                        for file in f.namelist():
+                            f.extract(file, rom_dir)
+                        # 修改版本号
+                        change_webconfig_version(rom_dir, key)
+                    else:
+                        #服务的发布方法
+                        release_service(version)
+                        pass
+                    print "-------------------------"
+            status = 1
+        else:
+            status = 0
+    if not status:
+        print("No info is logged in the database,Please check the input information!!!")
 
 #删除发布产生的临时文件
 def delete_tmp_dir():
@@ -84,7 +123,7 @@ def main():
     if len(argv) == 1:
         release_all_file(release_info)
     else:
-        pass
+        release_single_file(release_info,argv)
     delete_tmp_dir()
 
 
