@@ -20,10 +20,6 @@ import sys
 #                 f.writelines(change_version)
 #                 f.close
 #change_webconfig_version()
-def release_single_file(single_version_info):
-    #tmp_release_package_name = tmp_dir + version + "_"
-    print (single_version_info[1])
 
 
 
-release_single_file(sys.argv)
