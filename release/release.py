@@ -1,7 +1,7 @@
 #coding:utf-8
 from conf import Config as C
 from sys import argv
-import os, zipfile, zlib , shutil, re
+import os, zipfile, zlib , shutil, re ,subprocess,commands
 
 tmp_dir = "d:\\tmp\\"
 #拷贝发布文件到本地临时目录
@@ -9,7 +9,8 @@ def copy_file_to_tmp():
     if not os.path.exists(tmp_dir):
         os.mkdir(tmp_dir)
     source_dir = "\\\\"+C.SOURCE_IP+"\\share"
-    os.system("xcopy  %s %s" %(source_dir,tmp_dir))
+    os.system("xcopy /q %s %s" %(source_dir,tmp_dir))
+
 
 #从数据库获取具体需要发布的信息
 def get_release_info():
@@ -41,7 +42,7 @@ def release_all_file(release_info):
                     #修改版本号
                     change_webconfig_version(rom_dir,key)
                 else:
-                    release_service(version)
+                    release_service(version,key)
                     pass
 
 #修改版本号
@@ -67,17 +68,13 @@ def change_webconfig_version(rom_dir,key):
                 f.writelines(change_version)
                 f.close
 
-def release_service (version):
-    print ("服务发布暂未使用")
-    print ("发布目录"+C.SERVICE_DIR+version)
-    pass
 
 def release_single_file(release_info,single_version_info):
     print (single_version_info[1])
     #版本标识信息,1为数据库中有记录
     status = 1
-
     for version_info in release_info:
+        print (version_info)
         #判断输入版本是否记录在数据库中
         if single_version_info[1] in version_info.values():
             for key in version_info.keys():
@@ -99,14 +96,34 @@ def release_single_file(release_info,single_version_info):
                         change_webconfig_version(rom_dir, key)
                     else:
                         #服务的发布方法
-                        release_service(version)
-                        pass
+                        release_service(version,key)
                     print "-------------------------"
             status = 1
         else:
             status = 0
     if not status:
         print("No info is logged in the database,Please check the input information!!!")
+
+def release_service(version,key):
+    service_dir = C.SERVICE_DIR + "\\PDW.SCM.API_"+ version
+    print ("release directory" + C.SERVICE_DIR +"\\PDW.SCM.API_"+ version)
+    status = subprocess.Popen('cmd.exe /C sc query PDW.SCM.API_'+version+'| find "RUNNING" /c')
+    #status为0,则服务未启动或不存在
+    status_number = status.wait()
+    if not status_number:
+        stop = subprocess.Popen("cmd.exe /C sc stop PDW.SCM.API_" + version)
+        stop.wait()
+        tmp_release_package_name = tmp_dir + version + "_" + key + ".zip"
+        f = zipfile.ZipFile(tmp_release_package_name, 'r')
+        for file in f.namelist():
+            f.extract(file, service_dir)
+        start = subprocess.Popen("cmd.exe /C sc start PDW.SCM.API_" + version)
+        start.wait()
+    else:
+        print ("PDW.SCM.API_" + version + "服务未启动,或者未安装,请根据具体idc进行操作")
+
+
+
 
 #删除发布产生的临时文件
 def delete_tmp_dir():
@@ -118,13 +135,18 @@ def delete_tmp_dir():
 def main():
     #防止上次中断脚本,产生的临时目录影响本次执行
     delete_tmp_dir()
+    #获取数据库中发布信息
     release_info = get_release_info()
+    #拷贝文件到临时目录
     copy_file_to_tmp()
+    #判断是否有参数传入
     if len(argv) == 1:
+        #没有参数,执行全部发布
         release_all_file(release_info)
     else:
+        #有参数根据参数执行对应软件包发布
         release_single_file(release_info,argv)
-    delete_tmp_dir()
+    print "--------Release is complete--------"
 
 
 if __name__ == "__main__":

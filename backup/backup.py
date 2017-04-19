@@ -13,6 +13,8 @@ def select_release_packages():
         print ("发布目录不存在,请检测")
     #获取发布软件的名称
     package_names = os.listdir(source_dir)
+    #将发布文件进行排序,负责会出现字典值混乱现象
+    package_names.sort()
     version_info_dict = {}
     for package_name in package_names:
         #获取版本号
@@ -44,7 +46,6 @@ def backup_release_dir(version_info_dict):
         service_status = version_info_dict[key]["service"]
         #判断是否有服务发布
         if service_status:
-        #加一个判断
             backup_service_dir(key)
         web_dir = C.WEB_DIR
         os.chdir(web_dir)
@@ -65,7 +66,7 @@ def backup_service_dir(key):
             z.write(os.path.join(dirpath, filename))
     z.close()
 
-
+#将备份信息插入数据库
 def insert_backup_info_to_db(version_info_dict):
     for key in version_info_dict.keys():
         value = version_info_dict[key]
@@ -80,8 +81,11 @@ def delete_more_than_30days_packages():
     pass
 
 def main():
+    #获取发布信息
     version_info_dict = select_release_packages()
+    #备份文件
     backup_release_dir(version_info_dict)
+    #将发布信息存储到数据库中,以便于发布脚本读取
     insert_backup_info_to_db(version_info_dict)
 if __name__ == '__main__':
     main()
