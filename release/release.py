@@ -73,10 +73,13 @@ def release_single_file(release_info,single_version_info):
     print (single_version_info[1])
     #版本标识信息,1为数据库中有记录
     status = 1
+    flag = 0
     for version_info in release_info:
         print (version_info)
         #判断输入版本是否记录在数据库中
         if single_version_info[1] in version_info.values():
+            if flag == 1:
+                break
             for key in version_info.keys():
                 #判断输入的参数,是否在数据库中记录
                 if version_info[key] == 1 and key in single_version_info:
@@ -97,11 +100,13 @@ def release_single_file(release_info,single_version_info):
                     else:
                         #服务的发布方法
                         release_service(version,key)
+                        status = 1
+                        flag = 1
+                        break
                     print "-------------------------"
-            status = 1
         else:
             status = 0
-    if not status:
+    if status == 0:
         print("No info is logged in the database,Please check the input information!!!")
 
 def release_service(version,key):
