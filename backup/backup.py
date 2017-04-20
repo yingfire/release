@@ -4,6 +4,10 @@ import os, zipfile, zlib ,time
 
 now_time = str(int(time.time()))
 backup_dir = "d:/backups/" + now_time
+if not os.path.exists(backup_dir):
+    os.mkdir(backup_dir)
+web_dir = C.WEB_DIR
+service_dir = C.SERVICE_DIR
 
 #获取发布文件名称
 def select_release_packages():
@@ -38,33 +42,34 @@ def select_release_packages():
 
 #备份web目录
 def backup_release_dir(version_info_dict):
-    if not os.path.exists(backup_dir):
-        os.mkdir(backup_dir)
     #根据字典中的key值进行对应的备份
     for key in version_info_dict.keys():
-        print (key)
-        service_status = version_info_dict[key]["service"]
-        #判断是否有服务发布
-        if service_status:
-            backup_service_dir(key)
-        web_dir = C.WEB_DIR
-        os.chdir(web_dir)
-        z = zipfile.ZipFile(backup_dir + '/' + key + '.zip', 'w', zipfile.ZIP_DEFLATED)
-        for dirpath, dirname, filenames in os.walk(key):
-            for filename in filenames:
-                z.write(os.path.join(dirpath, filename))
-        z.close()
+        if not version_info_dict[key]["service"]:
+            os.chdir(web_dir)
+            z = zipfile.ZipFile(backup_dir + '/' + key + '.zip', 'w', zipfile.ZIP_DEFLATED)
+            for dirpath, dirname, filenames in os.walk(key):
+                for filename in filenames:
+                    z.write(os.path.join(dirpath, filename))
+            z.close()
+        elif version_info_dict[key]["bn"] or version_info_dict[key]["rom"] or version_info_dict[key]["wx"]:
+            os.chdir(web_dir)
+            z = zipfile.ZipFile(backup_dir + '/' + key + '.zip', 'w', zipfile.ZIP_DEFLATED)
+            for dirpath, dirname, filenames in os.walk(key):
+                for filename in filenames:
+                    z.write(os.path.join(dirpath, filename))
+            z.close()
 
 #备份服务
-def backup_service_dir(key):
-    service_dir = C.SERVICE_DIR
-    os.chdir(service_dir)
-    #print ("有服务"+str(key))
-    z = zipfile.ZipFile(backup_dir + '/' + key + '_service.zip', 'w', zipfile.ZIP_DEFLATED)
-    for dirpath, dirname, filenames in os.walk("PDW.SCM.API_"+key):
-        for filename in filenames:
-            z.write(os.path.join(dirpath, filename))
-    z.close()
+def backup_service_dir(version_info_dict):
+    for key in version_info_dict.keys():
+        service_status = version_info_dict[key]["service"]
+        os.chdir(service_dir)
+        if service_status:
+            z = zipfile.ZipFile(backup_dir + '/' + key + '_service.zip', 'w', zipfile.ZIP_DEFLATED)
+            for dirpath, dirname, filenames in os.walk("PDW.SCM.API_"+key):
+                for filename in filenames:
+                    z.write(os.path.join(dirpath, filename))
+            z.close()
 
 #将备份信息插入数据库
 def insert_backup_info_to_db(version_info_dict):
@@ -84,7 +89,10 @@ def main():
     #获取发布信息
     version_info_dict = select_release_packages()
     #备份文件
-    backup_release_dir(version_info_dict)
+    if os.path.exists(web_dir):
+        backup_release_dir(version_info_dict)
+    if os.path.exists(service_dir):
+        backup_service_dir(version_info_dict)
     #将发布信息存储到数据库中,以便于发布脚本读取
     insert_backup_info_to_db(version_info_dict)
 if __name__ == '__main__':
