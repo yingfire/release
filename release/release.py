@@ -75,11 +75,11 @@ def release_single_file(release_info,single_version_info):
     status = 1
     flag = 0
     for version_info in release_info:
-        print (version_info)
+        #print (version_info)
+        if flag == 1:
+            break
         #判断输入版本是否记录在数据库中
         if single_version_info[1] in version_info.values():
-            if flag == 1:
-                break
             for key in version_info.keys():
                 #判断输入的参数,是否在数据库中记录
                 if version_info[key] == 1 and key in single_version_info:
@@ -126,8 +126,6 @@ def release_service(version,key):
         start.wait()
     else:
         print ("PDW.SCM.API_" + version + "服务未启动,或者未安装,请根据具体idc进行操作")
-
-
 
 
 #删除发布产生的临时文件
