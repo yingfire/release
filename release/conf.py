@@ -14,3 +14,5 @@ class Config():
     SOURCE_IP = "139.199.211.70"
     WEB_DIR = "D:\\websites\\vpchn.rom.paidui.com\\h1"
     SERVICE_DIR = "D:\\winservices"
+
+

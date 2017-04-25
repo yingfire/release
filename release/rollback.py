@@ -46,7 +46,7 @@ def rollback(release_info,single_version_info):
                     start.wait()
                 #启动服务
                 else:
-                    print ("PDW.SCM.API_" + single_version_info[1] + "服务未启动,或者未安装,请根据具体idc进行操作")
+                    print ("PDW.SCM.API_" + single_version_info[1] + "The service is not started, or is not installed, please follow the specific idc operation")
                 break
             elif len(argv) == 2:
                 backup_file_name = backup_dir + single_version_info[1] + ".zip"

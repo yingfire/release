@@ -4,6 +4,7 @@ from sys import argv
 import os, zipfile, zlib , shutil, re ,subprocess,commands
 
 tmp_dir = "d:\\tmp\\"
+service_dir = C.SERVICE_DIR
 #拷贝发布文件到本地临时目录
 def copy_file_to_tmp():
     if not os.path.exists(tmp_dir):
@@ -97,6 +98,7 @@ def release_single_file(release_info,single_version_info):
                             f.extract(file, rom_dir)
                         # 修改版本号
                         change_webconfig_version(rom_dir, key)
+                        status = 1
                     else:
                         #服务的发布方法
                         release_service(version,key)
@@ -125,7 +127,8 @@ def release_service(version,key):
         start = subprocess.Popen("cmd.exe /C sc start PDW.SCM.API_" + version)
         start.wait()
     else:
-        print ("PDW.SCM.API_" + version + "服务未启动,或者未安装,请根据具体idc进行操作")
+        if os.path.exists(service_dir):
+            print ("PDW.SCM.API_" + version + "The service is not started, or is not installed, please follow the specific idc operation")
 
 
 #删除发布产生的临时文件
