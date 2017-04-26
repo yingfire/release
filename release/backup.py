@@ -14,7 +14,7 @@ def select_release_packages():
     source_dir = "\\\\"+C.SOURCE_IP+"\\share"
     #判断上传目录是否存在,不存在则创建
     if not os.path.exists(source_dir):
-        print ("发布目录不存在,请检测")
+        print ("release directory does not exist, please check it")
     #获取发布软件的名称
     package_names = os.listdir(source_dir)
     #将发布文件进行排序,负责会出现字典值混乱现象
@@ -68,7 +68,7 @@ def backup_service_dir(version_info_dict):
             z = zipfile.ZipFile(backup_dir + '/' + key + '_service.zip', 'w', zipfile.ZIP_DEFLATED)
             for dirpath, dirname, filenames in os.walk("PDW.SCM.API_"+key):
                 for filename in filenames:
-                    z.write(os.path.join(dirpath, filename))
+                    z.write(os.path.join(dirpath, filename.decode('utf-8')))
             z.close()
 
 #将备份信息插入数据库
@@ -95,5 +95,6 @@ def main():
         backup_service_dir(version_info_dict)
     #将发布信息存储到数据库中,以便于发布脚本读取
     insert_backup_info_to_db(version_info_dict)
+    print (version_info_dict)
 if __name__ == '__main__':
     main()

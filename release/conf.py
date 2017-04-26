@@ -10,9 +10,9 @@ class Config():
          charset='utf8mb4',
          cursorclass=pymysql.cursors.DictCursor)
 
-    HOSTNAME = "localhost"
-    SOURCE_IP = "139.199.211.70"
-    WEB_DIR = "D:\\websites\\vpchn.rom.paidui.com\\h1"
+    HOSTNAME = "ali_hd_service01"
+    SOURCE_IP = "10.20.1.2"
+    WEB_DIR = "D:\\websites\\vpchd.rom.paidui.com\\h1"
     SERVICE_DIR = "D:\\winservices"
 
 

@@ -1,7 +1,7 @@
 #coding:utf-8
 from conf import Config as C
 from sys import argv
-import os, zipfile, zlib , shutil, re ,subprocess,commands
+import os, zipfile, zlib , shutil, re ,subprocess,time
 
 tmp_dir = "d:\\tmp\\"
 service_dir = C.SERVICE_DIR
@@ -16,9 +16,12 @@ def copy_file_to_tmp():
 #从数据库获取具体需要发布的信息
 def get_release_info():
     with C.CONNECTION.cursor() as cursor:
-        sql = "SELECT * FROM web_backup_info WHERE TIME=(SELECT TIME FROM web_backup_info ORDER BY TIME DESC LIMIT 0,1)"
-        cursor.execute(sql)
+        #sql = "SELECT * FROM web_backup_info WHERE TIME=(SELECT TIME FROM web_backup_info ORDER BY TIME DESC LIMIT 0,1)"
+        sql = "SELECT * FROM web_backup_info WHERE TIME=(SELECT TIME FROM web_backup_info WHERE  hostname=%s ORDER BY TIME  LIMIT 1) "
+        cursor.execute(sql,(C.HOSTNAME,))
         result = cursor.fetchall()
+        print (result[0]["hostname"])
+        print (result)
         return result
 
 #发布所有的版本
@@ -31,17 +34,18 @@ def release_all_file(release_info):
                 tmp_release_package_name = tmp_dir + version + "_" + key + ".zip"
                 #print (tmp_release_package_name)
                 if key != "service":
-                    rom_dir = ""
-                    if key == "rom":
-                        rom_dir = C.WEB_DIR + "\\" +version
-                    else:
-                        rom_dir = C.WEB_DIR + "\\" +version + "\\" + str(key)
-                    #解压文件
-                    f = zipfile.ZipFile(tmp_release_package_name, 'r')
-                    for file in f.namelist():
-                        f.extract(file, rom_dir)
-                    #修改版本号
-                    change_webconfig_version(rom_dir,key)
+                    if os.path.exists(C.WEB_DIR):
+                        rom_dir = ""
+                        if key == "rom":
+                            rom_dir = C.WEB_DIR + "\\" +version
+                        else:
+                            rom_dir = C.WEB_DIR + "\\" +version + "\\" + str(key)
+                        #解压文件
+                        f = zipfile.ZipFile(tmp_release_package_name, 'r')
+                        for file in f.namelist():
+                            f.extract(file, rom_dir)
+                        #修改版本号
+                        change_webconfig_version(rom_dir,key)
                 else:
                     release_service(version,key)
                     pass
@@ -86,7 +90,7 @@ def release_single_file(release_info,single_version_info):
                 if version_info[key] == 1 and key in single_version_info:
                     version = str(version_info["version"])
                     tmp_release_package_name = tmp_dir + version + "_" + key + ".zip"
-                    if key != "service":
+                    if key != "service": 
                         rom_dir = ""
                         if key == "rom":
                             rom_dir = C.WEB_DIR + "\\" + version
@@ -98,7 +102,6 @@ def release_single_file(release_info,single_version_info):
                             f.extract(file, rom_dir)
                         # 修改版本号
                         change_webconfig_version(rom_dir, key)
-                        status = 1
                     else:
                         #服务的发布方法
                         release_service(version,key)
@@ -112,14 +115,18 @@ def release_single_file(release_info,single_version_info):
         print("No info is logged in the database,Please check the input information!!!")
 
 def release_service(version,key):
-    service_dir = C.SERVICE_DIR + "\\PDW.SCM.API_"+ version
-    print ("release directory" + C.SERVICE_DIR +"\\PDW.SCM.API_"+ version)
+    service_dir = C.SERVICE_DIR + "\\PDW.SCM.API_"+ version    
     status = subprocess.Popen('cmd.exe /C sc query PDW.SCM.API_'+version+'| find "RUNNING" /c')
-    #status为0,则服务未启动或不存在
+    status_2 = subprocess.Popen('cmd.exe /C sc query PDW.SCM.API_'+version+'| find "RUNNING"')
+    
     status_number = status.wait()
-    if not status_number:
+    #status_number为0,则服务启动
+    print ("status_number is"+str(status_number))
+    if status_number == 0:
+        print ("release directory" + C.SERVICE_DIR +"\\PDW.SCM.API_"+ version)
         stop = subprocess.Popen("cmd.exe /C sc stop PDW.SCM.API_" + version)
         stop.wait()
+        time.sleep(5)
         tmp_release_package_name = tmp_dir + version + "_" + key + ".zip"
         f = zipfile.ZipFile(tmp_release_package_name, 'r')
         for file in f.namelist():
@@ -128,6 +135,7 @@ def release_service(version,key):
         start.wait()
     else:
         if os.path.exists(service_dir):
+            print ("status_number is"+str(status_number))
             print ("PDW.SCM.API_" + version + "The service is not started, or is not installed, please follow the specific idc operation")
 
 

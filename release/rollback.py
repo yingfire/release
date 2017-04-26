@@ -8,8 +8,8 @@ import os, zipfile, zlib ,time,subprocess
 #获取发布信息
 def get_release_info():
     with C.CONNECTION.cursor() as cursor:
-        sql = "SELECT * FROM web_backup_info WHERE TIME=(SELECT TIME FROM web_backup_info ORDER BY TIME DESC LIMIT 0,1)"
-        cursor.execute(sql)
+        sql = "SELECT * FROM web_backup_info WHERE TIME=(SELECT TIME FROM web_backup_info WHERE  hostname=%s ORDER BY TIME  LIMIT 1) "
+        cursor.execute(sql,(C.HOSTNAME,))
         result = cursor.fetchall()
         return result
 def rollback(release_info,single_version_info):
