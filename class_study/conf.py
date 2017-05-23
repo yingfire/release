@@ -16,6 +16,6 @@ class Config():
     WEB_CLUSTER = "h1"
     SERVICE_DIR = "D:\\winservices"
     #当服务器为web时为True,service时为False
-    #WEB_STATUS = True
-    WEB_STATUS = False
+    WEB_STATUS = True
+    #WEB_STATUS = False
 

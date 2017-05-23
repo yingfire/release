@@ -20,7 +20,7 @@ def select_release_packages():
         print ("release directory does not exist, please check it")
     #获取发布软件的名称
     package_names = os.listdir(source_dir)
-    print (package_names)
+    #print (package_names)
     version_info_dict = {"service":[],"rom":[],"wx":[],"bn":[]}
     for package_name in package_names:
         package_info_dict = {}
@@ -51,7 +51,13 @@ def backup_and_release_web_dir(version_info_dict):
                 version = web_info_dict["version"]
                 print (web_info_dict["package_name"])
                 #如果加入6.3则在这里判断路径
-                os.chdir(web_dir + "\\" + web_cluster)
+                regex = "[0-9]?[6-9]{1}\.[3-9]{1}"
+                reobj = re.compile(regex)
+                if reobj.search(version):
+                    web_dir_re = web_dir
+                else:
+                    web_dir_re = web_dir + "\\" + web_cluster
+                os.chdir(web_dir_re)
                 z = zipfile.ZipFile(backup_dir + '/' + version + '.zip', 'w', zipfile.ZIP_DEFLATED)
                 for dirpath, dirname, filenames in os.walk(version):
                     for filename in filenames:
@@ -59,9 +65,9 @@ def backup_and_release_web_dir(version_info_dict):
                 z.close()
                 tmp_release_package_name=tmp_dir + version + "_" + key + ".zip"
                 if key == "rom":
-                    rom_dir = web_dir + "\\" + web_cluster + "\\" + version
+                    rom_dir = web_dir_re + "\\" + version
                 else:
-                    rom_dir = web_dir + "\\" + web_cluster + "\\" + version + "\\" + str(key)
+                    rom_dir = web_dir_re + "\\" + version + "\\" + str(key)
                 f = zipfile.ZipFile(tmp_release_package_name, 'r')
                 for file in f.namelist():
                     f.extract(file, rom_dir)
@@ -74,20 +80,23 @@ def change_webconfig_version(rom_dir,key):
     re_version = "(?<=value=\")(\d+\.)+\d+\.+\d*"
     #获取版本号的对象
     old_version_obj = re.compile(re_version, re.I)
-    with open(file_name,'r+') as f:
-        #将配置文件存储到buffer_file当中
-        buffer_file = f.read()
-        f.close()
-        if old_version_obj:
-            old_version = re.search(old_version_obj, buffer_file).group(0)
-            old_number = old_version.split(".")[2]
-            new_number = int(old_number) + 1
-            new_version = re.sub(old_number,str(new_number),old_version)
-            print (old_version+" ==> "+new_version)
-            with open(file_name,'w') as f:
-                change_version = re.sub(old_version,new_version,buffer_file)
-                f.writelines(change_version)
-                f.close
+    try:
+        with open(file_name,'r+') as f:
+            #将配置文件存储到buffer_file当中
+            buffer_file = f.read()
+            f.close()
+            if old_version_obj:
+                old_version = re.search(old_version_obj, buffer_file).group(0)
+                old_number = old_version.split(".")[2]
+                new_number = int(old_number) + 1
+                new_version = re.sub(old_number,str(new_number),old_version)
+                print (old_version+" ==> "+new_version)
+                with open(file_name,'w') as f:
+                    change_version = re.sub(old_version,new_version,buffer_file)
+                    f.writelines(change_version)
+                    f.close
+    except IOError, error_info:
+        print (error_info)
 
 #发布服务
 def backup_and_release_service_dir(version_info_dict):
