@@ -118,7 +118,7 @@ def release_service(version,key):
     service_dir = C.SERVICE_DIR + "\\PDW.SCM.API_"+ version    
     status = subprocess.Popen('cmd.exe /C sc query PDW.SCM.API_'+version+'| find "RUNNING" /c')
     status_2 = subprocess.Popen('cmd.exe /C sc query PDW.SCM.API_'+version+'| find "RUNNING"')
-    
+
     status_number = status.wait()
     #status_number为0,则服务启动
     print ("status_number is"+str(status_number))

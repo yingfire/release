@@ -37,6 +37,7 @@ def select_release_packages():
         else:
             value_dict["service"] = 1
         version_info_dict[version] = value_dict
+
     return  version_info_dict
     #----------------------------------------------------
 
