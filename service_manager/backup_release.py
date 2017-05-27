@@ -1,11 +1,13 @@
 #coding:utf-8
 from conf import Config as C
-import os, zipfile, zlib ,time,json,win32service,shutil,re
+from service_manager import ServiceManager as S
+import os, zipfile, zlib ,time,shutil,re
 
 now_time = str(int(time.time()))
 backup_dir = "d:/backups/" + now_time
 if not os.path.exists(backup_dir):
     os.mkdir(backup_dir)
+
 web_dir = C.WEB_DIR
 service_dir = C.SERVICE_DIR
 web_cluster = C.WEB_CLUSTER
@@ -109,32 +111,29 @@ def backup_and_release_service_dir(version_info_dict):
     service_info = version_info_dict["service"]
     for service_info_dict in service_info:
         service_name = "PDW.SCM.API_" + service_info_dict["version"]
-        #获取服务状态
-        scm = win32service.OpenSCManager(None, None, win32service.SC_MANAGER_ALL_ACCESS)
-        statuses = win32service.EnumServicesStatus(scm, win32service.SERVICE_WIN32, win32service.SERVICE_STATE_ALL)
-        for (shortname, desc, status) in statuses:
-            #判断服务是否存在并且处于运行状态
-            if shortname == service_name and status[1] == 4:
-                print (service_name)
-                version = service_info_dict["version"]
-                #备份服务
-                os.chdir(service_dir)
-                z = zipfile.ZipFile(backup_dir + '/' + version + '_service.zip', 'w', zipfile.ZIP_DEFLATED)
-                for dirpath, dirname, filenames in os.walk("PDW.SCM.API_" + version):
-                    for filename in filenames:
-                        z.write(os.path.join(dirpath, filename))
-                z.close()
-                #关闭服务
-                py_handle = win32service.OpenService(scm, service_name, win32service.SC_MANAGER_ALL_ACCESS)
-                win32service.ControlService(py_handle, win32service.SERVICE_CONTROL_STOP)
-                #拷贝文件
-                tmp_release_package_name=tmp_dir + version + "_service.zip"
-                f = zipfile.ZipFile(tmp_release_package_name, 'r')
-                for file in f.namelist():
-                    f.extract(file, service_dir+"\\PDW.SCM.API_"+version)
-                #启动服务
-                time.sleep(3)
-                win32service.StartService(py_handle, None)
+        print (service_name)
+        if S(service_name).is_exists():
+            version = service_info_dict["version"]
+            #备份服务
+            os.chdir(service_dir)
+            z = zipfile.ZipFile(backup_dir + '/' + version + '_service.zip', 'w', zipfile.ZIP_DEFLATED)
+            for dirpath, dirname, filenames in os.walk("PDW.SCM.API_" + version):
+                for filename in filenames:
+                    z.write(os.path.join(dirpath, filename))
+            z.close()
+        if S(service_name).status() == "RUNNING":
+            S(service_name).stop()
+            # 拷贝文件
+            tmp_release_package_name=tmp_dir + version + "_service.zip"
+            f = zipfile.ZipFile(tmp_release_package_name, 'r')
+            for file in f.namelist():
+                f.extract(file, service_dir+"\\PDW.SCM.API_"+version)
+            S(service_name).start()
+        else:
+            tmp_release_package_name=tmp_dir + version + "_service.zip"
+            f = zipfile.ZipFile(tmp_release_package_name, 'r')
+            for file in f.namelist():
+                f.extract(file, service_dir+"\\PDW.SCM.API_"+version)
 
 #删除发布产生的临时文件
 def delete_tmp_dir():
