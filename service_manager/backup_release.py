@@ -5,6 +5,8 @@ import os, zipfile, zlib ,time,shutil,re
 
 now_time = str(int(time.time()))
 backup_dir = "d:/backups/" + now_time
+if not os.path.exists("d:/backups/"):
+    os.mkdir("d:/backups/")
 if not os.path.exists(backup_dir):
     os.mkdir(backup_dir)
 
@@ -35,7 +37,6 @@ def select_release_packages():
                 version_info_dict[name].append(package_info_dict)
     #print (version_info_dict)
     return version_info_dict
-
 
 #拷贝发布文件到本地临时目录
 def copy_file_to_tmp():
