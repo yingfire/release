@@ -32,7 +32,7 @@ class ServiceManager(object):
         elif status_info[1] == win32service.SERVICE_STOP_PENDING:
             start_time = datetime.datetime.now()
             while True:
-                if (datetime.datetime.now() - start_time).seconds > 10:
+                if (datetime.datetime.now() - start_time).seconds > 20:
                     return (self.name + " stop long time")
                 time.sleep(1)
                 if win32service.QueryServiceStatus(self.handle)[1] == win32service.SERVICE_STOPPED:
