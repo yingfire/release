@@ -80,9 +80,6 @@ def backup_and_release_web_dir(version_info_dict):
                 for file in f.namelist():
                     f.extract(file, rom_dir)
                 change_webconfig_version(rom_dir, key)
-
-
-#修改版本号
 def make_zipfile(rom_dir,version,key):
     os.chdir(rom_dir)
     z = zipfile.ZipFile(backup_dir + '/' + version + str(key) + '.zip', 'w', zipfile.ZIP_DEFLATED)
@@ -97,6 +94,7 @@ def make_zipfile(rom_dir,version,key):
             # print (error_info)
     z.close()
 
+#修改版本号
 def change_webconfig_version(rom_dir,key):
     #file_name = C.WEB_DIR+"\\"+"v6.2"+"\\"+"Web.config"
     file_name = rom_dir + "\\" + "Web.config"
