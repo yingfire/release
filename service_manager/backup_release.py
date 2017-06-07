@@ -3,19 +3,17 @@ from conf import Config as C
 from service_manager import ServiceManager as S
 import os, zipfile, zlib ,time,shutil,re
 
-now_time = str(int(time.time()))
-backup_dir = "d:/backups/" + now_time
+now_time = "d:/backups/" + time.strftime("%Y%m%d%H%M")
+today_time = time.strftime("%Y%m%d")
+backup_dir = "d:/backups/" + today_time
 if not os.path.exists("d:/backups/"):
     os.mkdir("d:/backups/")
-if not os.path.exists(backup_dir):
-    os.mkdir(backup_dir)
-
 web_dir = C.WEB_DIR
 service_dir = C.SERVICE_DIR
 web_cluster = C.WEB_CLUSTER
 web_status = C.WEB_STATUS
 tmp_dir = "d:\\tmp\\"
-
+source_dir = "\\\\"+C.SOURCE_IP+"\\share"
 #获取发布文件名称
 def select_release_packages():
     source_dir = "\\\\"+C.SOURCE_IP+"\\share"
@@ -24,7 +22,6 @@ def select_release_packages():
         print ("release directory does not exist, please check it")
     #获取发布软件的名称
     package_names = os.listdir(source_dir)
-    #print (package_names)
     version_info_dict = {"service":[],"rom":[],"wx":[],"bn":[]}
     for package_name in package_names:
         package_info_dict = {}
@@ -35,18 +32,28 @@ def select_release_packages():
                 package_info_dict["package_name"] = package_name
                 package_info_dict["version"] = version
                 version_info_dict[name].append(package_info_dict)
-    #print (version_info_dict)
     return version_info_dict
 
 #拷贝发布文件到本地临时目录
-def copy_file_to_tmp():
+def copy_file_to_tmp(version_info_dict):
     if not os.path.exists(tmp_dir):
         os.mkdir(tmp_dir)
-    source_dir = "\\\\"+C.SOURCE_IP+"\\share"
-    os.system("xcopy /q %s %s" %(source_dir,tmp_dir))
+    if web_status:
+        del version_info_dict["service"]
+    else:
+        for key in version_info_dict.keys():
+            if key != "service":
+                del version_info_dict[key]
+    for key,values in version_info_dict.items():
+        for value in values:
+            filename = value["package_name"]
+            copy_file(filename)
+def copy_file(filename):
+    shutil.copy(source_dir+"\\"+filename,tmp_dir)
 
 #发布web
 def backup_and_release_web_dir(version_info_dict):
+    print version_info_dict.keys()
     for key in version_info_dict.keys():
         if key != "service" and version_info_dict[key] != []:
             web_info = version_info_dict[key]
@@ -59,30 +66,37 @@ def backup_and_release_web_dir(version_info_dict):
                 if reobj.search(version):
                     web_dir_re = web_dir
                     rom_dir = web_dir_re + "\\" + version + "\\" + str(key)
+                    make_zipfile(rom_dir, version,key)
                 else:
                     web_dir_re = web_dir + "\\" + web_cluster
                     if key == "rom":
                         rom_dir = web_dir_re + "\\" + version
+                        make_zipfile(rom_dir, version,key)
                     else:
                         rom_dir = web_dir_re + "\\" + version + "\\" + str(key)
-                os.chdir(web_dir_re)
-                z = zipfile.ZipFile(backup_dir + '/' + version + '.zip', 'w', zipfile.ZIP_DEFLATED)
-                for dirpath, dirname, filenames in os.walk(version):
-                    #过滤乱码文件
-                    try:
-                        for filename in filenames:
-                            z.write(os.path.join(dirpath, filename))
-                    except WindowsError,error_info:
-                        pass
-                        #print (error_info)
-                z.close()
+                        make_zipfile(rom_dir, version,key)
                 tmp_release_package_name=tmp_dir + version + "_" + key + ".zip"
                 f = zipfile.ZipFile(tmp_release_package_name, 'r')
                 for file in f.namelist():
                     f.extract(file, rom_dir)
                 change_webconfig_version(rom_dir, key)
 
+
 #修改版本号
+def make_zipfile(rom_dir,version,key):
+    os.chdir(rom_dir)
+    z = zipfile.ZipFile(backup_dir + '/' + version + str(key) + '.zip', 'w', zipfile.ZIP_DEFLATED)
+    for dirpath, dirname, filenames in os.walk(".\\"):
+        # 过滤乱码文件
+        try:
+            for filename in filenames:
+                # print filename
+                z.write(os.path.join(dirpath, filename))
+        except WindowsError, error_info:
+            pass
+            # print (error_info)
+    z.close()
+
 def change_webconfig_version(rom_dir,key):
     #file_name = C.WEB_DIR+"\\"+"v6.2"+"\\"+"Web.config"
     file_name = rom_dir + "\\" + "Web.config"
@@ -122,6 +136,8 @@ def backup_and_release_service_dir(version_info_dict):
                 for filename in filenames:
                     z.write(os.path.join(dirpath, filename))
             z.close()
+        else:
+            break
         if S(service_name).status() == "RUNNING":
             S(service_name).stop()
             # 拷贝文件
@@ -144,11 +160,15 @@ def delete_tmp_dir():
 
 #主体程序
 def main():
+    version_info_dict = select_release_packages()
     #拷贝文件到临时目录
     delete_tmp_dir()
-    copy_file_to_tmp()
+    copy_file_to_tmp(version_info_dict)
+    if os.path.exists(backup_dir):
+        shutil.move(backup_dir,now_time)
+    os.mkdir(backup_dir)
     #获取发布信息
-    version_info_dict = select_release_packages()
+
     if web_status:
         #发布web
         backup_and_release_web_dir(version_info_dict)
