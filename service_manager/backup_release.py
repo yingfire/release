@@ -82,7 +82,7 @@ def backup_and_release_web_dir(version_info_dict):
                 change_webconfig_version(rom_dir, key)
 def make_zipfile(rom_dir,version,key):
     os.chdir(rom_dir)
-    z = zipfile.ZipFile(backup_dir + '/' + version + str(key) + '.zip', 'w', zipfile.ZIP_DEFLATED)
+    z = zipfile.ZipFile(backup_dir + '/' + version + "_" + str(key) + '.zip', 'w', zipfile.ZIP_DEFLATED)
     for dirpath, dirname, filenames in os.walk(".\\"):
         # 过滤乱码文件
         try:
